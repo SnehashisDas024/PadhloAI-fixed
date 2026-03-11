@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics — Remote Education Tutor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .period-btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+      background: transparent;
+    }
+
+    .period-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .subject-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      border: 1.5px solid var(--border);
+      color: var(--text-muted);
+      background: transparent;
+    }
+
+    .subject-badge.active {
+      background: rgba(79, 70, 229, 0.12);
+      color: var(--primary);
+      border-color: var(--primary-light);
+    }
+
+    .weak-topic {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      transition: var(--transition);
+    }
+
+    .weak-topic:hover {
+      background: rgba(239, 68, 68, 0.04);
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    .topic-score {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 140px;
+      padding: 0 8px;
+    }
+
+    .bar-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .bar-fill {
+      width: 100%;
+      border-radius: 6px 6px 0 0;
+      background: linear-gradient(to top, var(--primary), var(--accent2));
+      min-height: 4px;
+      transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: visible;
+    }
+
+    .bar-fill:hover {
+      opacity: 0.85;
+    }
+
+    .bar-fill::after {
+      content: attr(data-val);
+      position: absolute;
+      top: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--primary);
+      white-space: nowrap;
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .bar-fill:hover::after {
+      opacity: 1;
+    }
+
+    .bar-label {
+      font-size: 0.65rem;
+      color: var(--text-light);
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .streak-day {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .streak-day.done {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+    }
+
+    .streak-day.today {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .streak-day.missed {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
+
+    .streak-day.future {
+      background: rgba(79, 70, 229, 0.04);
+      color: var(--text-light);
+    }
+
+    .heatmap-cell {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .heatmap-cell:hover {
+      transform: scale(1.3);
+    }
+  </style>
+</head>
+
+<body>
+
+  <script src="js/api.js"></script>
+  <script>requireAuth();</script>
+  <script src="js/layout.js"></script>
+  <script>renderLayout('Analytics', 'analytics.html');</script>
+
+  <main class="main-content page-content">
+    <div
+      style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="font-size:1.4rem;margin-bottom:4px">Learning Analytics</h2>
+        <p class="text-muted text-sm">Track your progress and identify areas for improvement.</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="period-btn" onclick="setPeriod('week',this)">Week</button>
+        <button class="period-btn active" onclick="setPeriod('month',this)">Month</button>
+        <button class="period-btn" onclick="setPeriod('year',this)">Year</button>
+      </div>
+    </div>
+
+    <!-- Top Stats -->
+    <div class="grid-4 mb-6">
+      <div class="card"
+        style="background:linear-gradient(135deg,var(--primary),var(--accent2));color:white;border:none">
+        <div style="font-size:1.8rem;font-weight:800;font-family:'Sora',sans-serif">34h</div>
+        <div style="opacity:0.85;font-size:0.78rem;margin-top:4px">Study Time This Month</div>
+        <div style="opacity:0.7;font-size:0.7rem;margin-top:6px">↑ 12% from last month</div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.8rem;font-weight:800;font-family:'Sora',sans-serif;color:var(--success)">82%</div>
+        <div class="text-muted text-sm mt-1">Average Score</div>
+        <div style="color:var(--success);font-size:0.72rem;margin-top:6px">↑ 7% improvement</div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.8rem;font-weight:800;font-family:'Sora',sans-serif;color:var(--warning)">🔥 12</div>
+        <div class="text-muted text-sm mt-1">Day Streak</div>
+        <div style="color:var(--warning);font-size:0.72rem;margin-top:6px">Keep it going!</div>
+      </div>
+      <div class="card">
+        <div style="font-size:1.8rem;font-weight:800;font-family:'Sora',sans-serif;color:var(--accent)">847</div>
+        <div class="text-muted text-sm mt-1">Questions Solved</div>
+        <div style="color:var(--accent);font-size:0.72rem;margin-top:6px">↑ 23% this month</div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid-2 mb-6">
+      <!-- Score trend -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h4 style="font-size:0.9rem">📈 Score Trend</h4>
+          <div style="display:flex;gap:6px">
+            <span class="subject-badge active" onclick="toggleSubject(this,'Physics')">⚛️ Physics</span>
+            <span class="subject-badge" onclick="toggleSubject(this,'Math')">📐 Math</span>
+            <span class="subject-badge" onclick="toggleSubject(this,'Chem')">🧪 Chem</span>
+          </div>
+        </div>
+        <div class="bar-chart" id="score-chart"></div>
+        <div style="display:flex;justify-content:space-between;padding:0 8px;margin-top:4px">
+          <span style="font-size:0.65rem;color:var(--text-light)">4 weeks ago</span>
+          <span style="font-size:0.65rem;color:var(--text-light)">This week</span>
+        </div>
+      </div>
+
+      <!-- Activity chart -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h4 style="font-size:0.9rem">⏱️ Study Hours</h4>
+          <span class="badge badge-primary">This Month</span>
+        </div>
+        <div class="bar-chart" id="hours-chart"></div>
+        <div style="display:flex;justify-content:space-between;padding:0 8px;margin-top:4px">
+          <span style="font-size:0.65rem;color:var(--text-light)">Week 1</span>
+          <span style="font-size:0.65rem;color:var(--text-light)">Week 4</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress + Weak Topics + Streak -->
+    <div class="grid-3 mb-6">
+
+      <!-- Subject Progress -->
+      <div class="card">
+        <h4 style="font-size:0.9rem;margin-bottom:16px">📊 Subject Mastery</h4>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div class="flex justify-between mb-1">
+              <span style="font-size:0.8rem;font-weight:600">⚛️ Physics</span>
+              <span style="font-size:0.78rem;color:var(--primary);font-weight:700">85%</span>
+            </div>
+            <div class="progress-bar" style="height:8px">
+              <div class="progress-fill" data-width="85%" style="width:0"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span style="font-size:0.8rem;font-weight:600">🧪 Chemistry</span>
+              <span style="font-size:0.78rem;color:var(--warning);font-weight:700">62%</span>
+            </div>
+            <div class="progress-bar" style="height:8px">
+              <div class="progress-fill" data-width="62%"
+                style="width:0;background:linear-gradient(90deg,var(--warning),#fbbf24)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span style="font-size:0.8rem;font-weight:600">📐 Mathematics</span>
+              <span style="font-size:0.78rem;color:var(--success);font-weight:700">91%</span>
+            </div>
+            <div class="progress-bar" style="height:8px">
+              <div class="progress-fill" data-width="91%"
+                style="width:0;background:linear-gradient(90deg,var(--success),#34d399)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span style="font-size:0.8rem;font-weight:600">🌱 Biology</span>
+              <span style="font-size:0.78rem;color:var(--accent);font-weight:700">78%</span>
+            </div>
+            <div class="progress-bar" style="height:8px">
+              <div class="progress-fill" data-width="78%"
+                style="width:0;background:linear-gradient(90deg,var(--accent),#22d3ee)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span style="font-size:0.8rem;font-weight:600">🌍 History</span>
+              <span style="font-size:0.78rem;color:var(--danger);font-weight:700">55%</span>
+            </div>
+            <div class="progress-bar" style="height:8px">
+              <div class="progress-fill" data-width="55%"
+                style="width:0;background:linear-gradient(90deg,var(--danger),#f87171)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weak Topics -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h4 style="font-size:0.9rem">⚠️ Weak Topics</h4>
+          <span class="badge badge-danger">Need Focus</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="weak-topic">
+            <div class="topic-score">38%</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.82rem;font-weight:700">Organic Chemistry</div>
+              <div style="font-size:0.7rem;color:var(--text-light)">Chemistry · 5 tests</div>
+              <div class="progress-bar mt-1" style="height:4px">
+                <div class="progress-fill" data-width="38%"
+                  style="width:0;background:linear-gradient(90deg,var(--danger),#f87171)"></div>
+              </div>
+            </div>
+            <a href="chat.html" style="font-size:0.7rem;color:var(--primary);text-decoration:none;flex-shrink:0">Ask AI
+              →</a>
+          </div>
+          <div class="weak-topic">
+            <div class="topic-score">44%</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.82rem;font-weight:700">Modern India History</div>
+              <div style="font-size:0.7rem;color:var(--text-light)">History · 3 tests</div>
+              <div class="progress-bar mt-1" style="height:4px">
+                <div class="progress-fill" data-width="44%"
+                  style="width:0;background:linear-gradient(90deg,var(--danger),#f87171)"></div>
+              </div>
+            </div>
+            <a href="chat.html" style="font-size:0.7rem;color:var(--primary);text-decoration:none;flex-shrink:0">Ask AI
+              →</a>
+          </div>
+          <div class="weak-topic">
+            <div class="topic-score" style="background:rgba(245,158,11,0.1);color:var(--warning)">58%</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.82rem;font-weight:700">Trigonometry</div>
+              <div style="font-size:0.7rem;color:var(--text-light)">Mathematics · 7 tests</div>
+              <div class="progress-bar mt-1" style="height:4px">
+                <div class="progress-fill" data-width="58%"
+                  style="width:0;background:linear-gradient(90deg,var(--warning),#fbbf24)"></div>
+              </div>
+            </div>
+            <a href="chat.html" style="font-size:0.7rem;color:var(--primary);text-decoration:none;flex-shrink:0">Ask AI
+              →</a>
+          </div>
+          <div class="weak-topic">
+            <div class="topic-score" style="background:rgba(245,158,11,0.1);color:var(--warning)">61%</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.82rem;font-weight:700">Acid-Base Reactions</div>
+              <div style="font-size:0.7rem;color:var(--text-light)">Chemistry · 4 tests</div>
+              <div class="progress-bar mt-1" style="height:4px">
+                <div class="progress-fill" data-width="61%"
+                  style="width:0;background:linear-gradient(90deg,var(--warning),#fbbf24)"></div>
+              </div>
+            </div>
+            <a href="chat.html" style="font-size:0.7rem;color:var(--primary);text-decoration:none;flex-shrink:0">Ask AI
+              →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Study Streak -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h4 style="font-size:0.9rem">🔥 Study Streak</h4>
+          <span class="badge badge-warning">12 days</span>
+        </div>
+
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:2.5rem;font-family:'Sora',sans-serif;font-weight:800;color:var(--warning)">🔥 12</div>
+          <div style="font-size:0.8rem;color:var(--text-muted)">Current Streak</div>
+          <div style="font-size:0.72rem;color:var(--text-light);margin-top:4px">Best: 18 days 🏆</div>
+        </div>
+
+        <div id="streak-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px">
+          <!-- Populated by JS -->
+        </div>
+
+        <div
+          style="padding:12px;border-radius:10px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15)">
+          <div style="font-size:0.78rem;font-weight:700;margin-bottom:4px;color:var(--warning)">Today's Goal</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">Study 45 mins to maintain streak</div>
+          <div class="progress-bar mt-2">
+            <div class="progress-fill" data-width="60%"
+              style="width:0;background:linear-gradient(90deg,var(--warning),#fbbf24)"></div>
+          </div>
+          <div style="font-size:0.68rem;color:var(--text-light);margin-top:4px">27/45 minutes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Heatmap -->
+    <div class="card">
+      <div class="flex items-center justify-between mb-4">
+        <h4 style="font-size:0.9rem">📅 Learning Activity Heatmap</h4>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.72rem;color:var(--text-light)">
+          <span>Less</span>
+          <div style="display:flex;gap:3px">
+            <div style="width:12px;height:12px;border-radius:2px;background:rgba(79,70,229,0.08)"></div>
+            <div style="width:12px;height:12px;border-radius:2px;background:rgba(79,70,229,0.2)"></div>
+            <div style="width:12px;height:12px;border-radius:2px;background:rgba(79,70,229,0.4)"></div>
+            <div style="width:12px;height:12px;border-radius:2px;background:rgba(79,70,229,0.7)"></div>
+            <div style="width:12px;height:12px;border-radius:2px;background:var(--primary)"></div>
+          </div>
+          <span>More</span>
+        </div>
+      </div>
+      <div id="heatmap" style="display:flex;gap:4px;overflow-x:auto;padding:4px 0"></div>
+      <div style="margin-top:12px;font-size:0.72rem;color:var(--text-light)">Total: 847 questions answered · 34 study
+        hours in the last 3 months</div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    function renderStreakGrid() {
+      const grid = document.getElementById('streak-grid');
+      if (!grid) return;
+      const days = ['S','M','T','W','T','F','S'];
+      const headers = days.map(d => `<div style="text-align:center;font-size:0.62rem;color:var(--text-light);font-weight:700;padding-bottom:4px">${d}</div>`).join('');
+      const types = ['done','done','done','done','done','done','done','done','done','done','done','done','today','future','future','future','future','future','future','done','done','missed','done','done','done','done','done','done'];
+      const cells = types.slice(0,28).map(t => {
+        const label = t==='done'?'✓':t==='today'?'📍':t==='missed'?'×':'';
+        return `<div class="streak-day ${t}">${label}</div>`;
+      }).join('');
+      grid.innerHTML = headers + cells;
+    }
+
+    function setPeriod(p, btn) {
+      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCharts();
+      showToast(`Showing ${p}ly data`, 'info');
+    }
+
+    function toggleSubject(el) { el.classList.toggle('active'); }
+
+    function renderCharts(recentScores) {
+      // Score chart — use real scores if available
+      const scores = recentScores && recentScores.length > 0
+        ? [...recentScores].reverse().slice(-12)
+        : [65, 70, 72, 68, 75, 78, 80, 76, 82, 84, 83, 88];
+      const maxScore = 100;
+      const scoreChart = document.getElementById('score-chart');
+      if (scoreChart) {
+        scoreChart.innerHTML = scores.map((s, i) => `
+          <div class="bar-col">
+            <div class="bar-fill" data-val="${s}%" style="height:${s/maxScore*120}px;background:${s>=80?'linear-gradient(to top,var(--success),#34d399)':'linear-gradient(to top,var(--primary),var(--accent2))'}"></div>
+            <div class="bar-label">${i+1}</div>
+          </div>`).join('');
+      }
+
+      // Hours chart
+      const hours = [2.5,3,1.5,4,3.5,2,5,4,3,6,4.5,5,3,7,5,6,4,8,6,5,3.5,7,5.5,6,4,8,5,6];
+      const maxH = 8;
+      const weekLabels = Array(28).fill(0).map((_,i)=>`W${Math.floor(i/7)+1}`);
+      const hoursChart = document.getElementById('hours-chart');
+      if (hoursChart) {
+        hoursChart.innerHTML = hours.slice(0,28).map((h,i) => `
+          <div class="bar-col">
+            <div class="bar-fill" data-val="${h}h" style="height:${h/maxH*120}px"></div>
+            ${i%7===0?`<div class="bar-label">${weekLabels[i]}</div>`:'<div class="bar-label"></div>'}
+          </div>`).join('');
+      }
+    }
+
+    function renderHeatmap() {
+      const container = document.getElementById('heatmap');
+      if (!container) return;
+      container.innerHTML = '';
+      for (let w = 0; w < 14; w++) {
+        const col = document.createElement('div');
+        col.style.cssText = 'display:flex;flex-direction:column;gap:3px';
+        for (let d = 0; d < 7; d++) {
+          const intensity = Math.random();
+          const cell = document.createElement('div');
+          cell.className = 'heatmap-cell';
+          cell.style.background = intensity<0.3?'rgba(79,70,229,0.08)':intensity<0.5?'rgba(79,70,229,0.2)':intensity<0.7?'rgba(79,70,229,0.4)':intensity<0.9?'rgba(79,70,229,0.65)':'var(--primary)';
+          const qs = Math.floor(intensity*80);
+          cell.setAttribute('data-tooltip', `${qs} questions`);
+          col.appendChild(cell);
+        }
+        container.appendChild(col);
+      }
+    }
+
+    async function loadAnalytics() {
+      try {
+        const data = await AnalyticsAPI.summary();
+        // Update stat cards with real data
+        const statCards = document.querySelectorAll('.grid-4.mb-6 .card');
+        if (statCards[1]) statCards[1].querySelector('div:first-child').textContent = (data.average_score || 0) + '%';
+        if (statCards[3]) statCards[3].querySelector('div:first-child').textContent = data.total_quizzes_taken || 0;
+
+        // Update total docs display
+        const docsEl = document.querySelector('[style*="total_documents"]');
+
+        renderCharts(data.recent_scores);
+      } catch(_) {
+        renderCharts();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderStreakGrid();
+      renderCharts();
+      renderHeatmap();
+      loadAnalytics();
+    });
+  </script>
+</body>
+
+</html>

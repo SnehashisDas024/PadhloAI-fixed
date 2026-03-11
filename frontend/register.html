@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — Remote Education Tutor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 520px;
+      animation: pageFade 0.6s ease;
+    }
+
+    .auth-card {
+      padding: 40px;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .auth-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--primary), var(--accent2));
+      border-radius: 16px;
+      font-size: 1.6rem;
+      color: white;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+      margin-bottom: 16px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .auth-title {
+      font-size: 1.5rem;
+      margin-bottom: 6px;
+    }
+
+    .auth-sub {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    .form-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .role-card {
+      padding: 12px 8px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .role-card:hover {
+      border-color: var(--primary);
+      background: rgba(79, 70, 229, 0.05);
+    }
+
+    .role-card.selected {
+      border-color: var(--primary);
+      background: rgba(79, 70, 229, 0.1);
+    }
+
+    .role-card .role-emoji {
+      font-size: 1.4rem;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .role-card .role-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .role-card.selected .role-label {
+      color: var(--primary);
+    }
+
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      justify-content: center;
+    }
+
+    .step {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      transition: var(--transition);
+      border: 2px solid var(--border);
+      color: var(--text-light);
+    }
+
+    .step.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+    }
+
+    .step.done {
+      background: var(--success);
+      color: white;
+      border-color: var(--success);
+    }
+
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      border-radius: 99px;
+      max-width: 60px;
+    }
+
+    .step-line.done {
+      background: var(--success);
+    }
+
+    .strength-bar {
+      height: 4px;
+      border-radius: 99px;
+      background: var(--border);
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .strength-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.4s ease, background 0.4s ease;
+    }
+
+    .pass-toggle {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: var(--text-light);
+      user-select: none;
+      transition: var(--transition);
+    }
+
+    .pass-toggle:hover {
+      color: var(--primary);
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .auth-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    @media(max-width:480px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="auth-page">
+    <div class="auth-container">
+      <div class="glass auth-card">
+        <div class="auth-header">
+          <div class="auth-logo">🌟</div>
+          <h1 class="auth-title text-gradient">Create Account</h1>
+          <p class="auth-sub">Join thousands of rural learners across India</p>
+        </div>
+
+        <!-- Steps -->
+        <div class="step-indicator">
+          <div class="step active" id="step1-dot">1</div>
+          <div class="step-line" id="line1"></div>
+          <div class="step" id="step2-dot">2</div>
+          <div class="step-line" id="line2"></div>
+          <div class="step" id="step3-dot">3</div>
+        </div>
+
+        <!-- Step 1: Personal Info -->
+        <div id="step-1" class="form-stack">
+          <div class="form-row">
+            <div class="input-group">
+              <label class="input-label">First Name</label>
+              <div class="input-icon">
+                <span class="icon">👤</span>
+                <input type="text" class="input" id="fname" placeholder="Arjun" required>
+              </div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Last Name</label>
+              <div class="input-icon">
+                <span class="icon">👤</span>
+                <input type="text" class="input" id="lname" placeholder="Sharma">
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Email Address</label>
+            <div class="input-icon">
+              <span class="icon">📧</span>
+              <input type="email" class="input" id="email" placeholder="arjun@example.com" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Username <span style="font-size:0.72rem;color:var(--text-light)">(used to log in)</span></label>
+            <div class="input-icon">
+              <span class="icon">🪪</span>
+              <input type="text" class="input" id="reg-username" placeholder="arjun_sharma" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Phone (Optional)</label>
+            <div class="input-icon">
+              <span class="icon">📱</span>
+              <input type="tel" class="input" placeholder="+91 98765 43210">
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg btn-full" onclick="goStep(2)">
+            Continue →
+          </button>
+        </div>
+
+        <!-- Step 2: Role & School -->
+        <div id="step-2" class="form-stack" style="display:none">
+          <div class="input-group">
+            <label class="input-label">Select Your Role</label>
+            <div class="role-grid">
+              <div class="role-card selected" onclick="selectReg('student',this)" data-role="student">
+                <span class="role-emoji">🎓</span>
+                <span class="role-label">Student</span>
+              </div>
+              <div class="role-card" onclick="selectReg('teacher',this)" data-role="teacher">
+                <span class="role-emoji">👨‍🏫</span>
+                <span class="role-label">Teacher</span>
+              </div>
+              <div class="role-card" onclick="selectReg('admin',this)" data-role="admin">
+                <span class="role-emoji">⚙️</span>
+                <span class="role-label">Admin</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">State / Region</label>
+            <div class="input-icon">
+              <span class="icon">📍</span>
+              <select class="input">
+                <option>Uttar Pradesh</option>
+                <option>Bihar</option>
+                <option>Rajasthan</option>
+                <option>Madhya Pradesh</option>
+                <option>Odisha</option>
+                <option>Jharkhand</option>
+                <option>West Bengal</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">School / Institution</label>
+            <div class="input-icon">
+              <span class="icon">🏫</span>
+              <input type="text" class="input" placeholder="Government High School...">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-outline btn-full" onclick="goStep(1)">← Back</button>
+            <button class="btn btn-primary btn-full" onclick="goStep(3)">Continue →</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Password -->
+        <div id="step-3" class="form-stack" style="display:none">
+          <div class="input-group">
+            <label class="input-label">Create Password</label>
+            <div class="input-icon" style="position:relative">
+              <span class="icon">🔒</span>
+              <input type="password" class="input" id="reg-pass" placeholder="Min 8 characters"
+                oninput="checkStrength(this.value)">
+              <span class="pass-toggle" onclick="togglePass2()">👁️</span>
+            </div>
+            <div class="strength-bar">
+              <div class="strength-fill" id="strength-bar" style="width:0;background:var(--danger)"></div>
+            </div>
+            <span id="strength-label" class="text-xs text-light">Enter a password</span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Confirm Password</label>
+            <div class="input-icon">
+              <span class="icon">🔒</span>
+              <input type="password" class="input" id="conf-pass" placeholder="Re-enter password">
+            </div>
+          </div>
+
+          <label
+            style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.82rem;color:var(--text-muted);line-height:1.5">
+            <input type="checkbox" style="margin-top:2px;accent-color:var(--primary)" required>
+            I agree to the <a href="#" style="color:var(--primary)">Terms of Service</a> and <a href="#"
+              style="color:var(--primary)">Privacy Policy</a>
+          </label>
+
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-outline btn-full" onclick="goStep(2)">← Back</button>
+            <button class="btn btn-primary btn-full" onclick="handleRegister()" id="reg-btn">
+              <span id="reg-btn-text">Create Account 🚀</span>
+              <span id="reg-loader" class="loader" style="display:none"></span>
+            </button>
+          </div>
+        </div>
+
+        <p class="auth-footer">
+          Already have an account? <a href="login.html">Sign In →</a>
+        </p>
+      </div>
+
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-ghost theme-btn" style="font-size:0.8rem">
+          <span class="theme-icon">🌙</span> Toggle Dark Mode
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (Auth.isLoggedIn()) window.location.href = 'dashboard.html';
+
+    let currentStep = 1;
+    let selectedRole = 'student';
+
+    function goStep(n) {
+      // Validate step 1 before moving forward
+      if (n > 1 && currentStep === 1) {
+        const fname = document.getElementById('fname').value.trim();
+        const email = document.getElementById('email').value.trim();
+        if (!fname || !email) { showToast('Please fill in your name and email', 'error'); return; }
+        const uname = document.getElementById('reg-username') ? document.getElementById('reg-username').value.trim() : 'ok';
+        if (!uname) { showToast('Please choose a username', 'error'); return; }
+      }
+      document.getElementById(`step-${currentStep}`).style.display = 'none';
+      document.getElementById(`step-${n}`).style.display = 'flex';
+      for (let i = 1; i <= 3; i++) {
+        const dot = document.getElementById(`step${i}-dot`);
+        if (i < n) { dot.className = 'step done'; dot.textContent = '✓'; }
+        else if (i === n) { dot.className = 'step active'; dot.textContent = i; }
+        else { dot.className = 'step'; dot.textContent = i; }
+      }
+      for (let i = 1; i <= 2; i++) {
+        const line = document.getElementById(`line${i}`);
+        line.className = i < n ? 'step-line done' : 'step-line';
+      }
+      currentStep = n;
+    }
+
+    function selectReg(role, el) {
+      document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedRole = role;
+    }
+
+    function checkStrength(val) {
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const bar = document.getElementById('strength-bar');
+      const label = document.getElementById('strength-label');
+      const map = { 0: ['0%', 'var(--danger)', 'Too weak'], 1: ['25%', 'var(--danger)', 'Weak'], 2: ['50%', 'var(--warning)', 'Fair'], 3: ['75%', 'var(--primary)', 'Good'], 4: ['100%', 'var(--success)', 'Strong ✓'] };
+      bar.style.width = map[score][0];
+      bar.style.background = map[score][1];
+      label.textContent = map[score][2];
+      label.style.color = map[score][1];
+    }
+
+    function togglePass2() {
+      const f = document.getElementById('reg-pass');
+      f.type = f.type === 'password' ? 'text' : 'password';
+    }
+
+    async function handleRegister() {
+      const pass = document.getElementById('reg-pass').value;
+      const conf = document.getElementById('conf-pass').value;
+      if (!pass) { showToast('Please enter a password', 'error'); return; }
+      if (pass !== conf) { showToast('Passwords do not match', 'error'); return; }
+      if (pass.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+
+      const fname = document.getElementById('fname').value.trim();
+      const lname = document.getElementById('lname').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const username = document.getElementById('reg-username').value.trim().toLowerCase().replace(/\s+/g, '_');
+      if (!username) { showToast('Please choose a username', 'error'); btn.disabled=false; document.getElementById('reg-btn-text').style.display='inline'; document.getElementById('reg-loader').style.display='none'; return; }
+
+      const btn = document.getElementById('reg-btn');
+      document.getElementById('reg-btn-text').style.display = 'none';
+      document.getElementById('reg-loader').style.display = 'inline-block';
+      btn.disabled = true;
+
+      try {
+        await AuthAPI.register(username, email, pass);
+        showToast('Account created! Logging you in...', 'success');
+        // Auto-login after register
+        const loginData = await AuthAPI.login(username, pass);
+        Auth.setSession(loginData.access_token, { username: loginData.username, user_id: loginData.user_id });
+        setTimeout(() => window.location.href = 'dashboard.html', 900);
+      } catch (err) {
+        showToast(err.message || 'Registration failed. Try a different email.', 'error');
+        btn.disabled = false;
+        document.getElementById('reg-btn-text').style.display = 'inline';
+        document.getElementById('reg-loader').style.display = 'none';
+      }
+    }
+  </script>
+</body>
+
+</html>

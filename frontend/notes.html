@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notes Generator — Remote Education Tutor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .notes-preview {
+      background: white;
+      border-radius: var(--radius);
+      padding: 32px;
+      min-height: 500px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      font-size: 0.88rem;
+      line-height: 1.8;
+    }
+
+    [data-theme="dark"] .notes-preview {
+      background: rgba(20, 18, 50, 0.9);
+    }
+
+    .notes-h1 {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--primary);
+    }
+
+    .notes-h2 {
+      font-family: 'Sora', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 20px 0 8px;
+      color: var(--text);
+      border-left: 3px solid var(--primary);
+      padding-left: 10px;
+    }
+
+    .notes-h3 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin: 12px 0 4px;
+      color: var(--accent2);
+    }
+
+    .notes-ul {
+      list-style: none;
+      padding: 0;
+      margin: 6px 0;
+    }
+
+    .notes-ul li {
+      padding: 3px 0 3px 20px;
+      position: relative;
+    }
+
+    .notes-ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .notes-box {
+      background: rgba(79, 70, 229, 0.06);
+      border: 1px solid rgba(79, 70, 229, 0.15);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 10px 0;
+    }
+
+    .notes-formula {
+      background: rgba(6, 182, 212, 0.06);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 8px 0;
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: var(--accent);
+    }
+
+    .notes-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      margin-right: 6px;
+    }
+
+    .generating-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: var(--bg-card);
+      backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 10;
+    }
+
+    .generating-overlay.show {
+      display: flex;
+    }
+
+    .gen-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(79, 70, 229, 0.15);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .chapter-card {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chapter-card:hover {
+      border-color: var(--primary);
+      background: rgba(79, 70, 229, 0.04);
+    }
+
+    .chapter-card.selected {
+      border-color: var(--primary);
+      background: rgba(79, 70, 229, 0.08);
+    }
+
+    .chapter-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: rgba(79, 70, 229, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .export-btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+
+<body>
+
+  <script src="js/api.js"></script>
+  <script>requireAuth();</script>
+  <script src="js/layout.js"></script>
+  <script>renderLayout('Notes Generator', 'notes.html');</script>
+
+  <main class="main-content page-content">
+    <div style="margin-bottom:24px">
+      <h2 style="font-size:1.4rem;margin-bottom:6px">AI Notes Generator</h2>
+      <p class="text-muted text-sm">Generate concise, curriculum-aligned notes from your uploaded textbooks.</p>
+    </div>
+
+    <div class="grid-2" style="gap:24px">
+      <!-- Controls -->
+      <div>
+        <div class="card mb-4">
+          <h4 style="font-size:0.9rem;margin-bottom:16px">📚 Select Content</h4>
+
+          <div class="form-stack" style="display:flex;flex-direction:column;gap:14px">
+            <div class="input-group">
+              <label class="input-label">Subject</label>
+              <div class="input-icon">
+                <span class="icon">⚗️</span>
+                <select class="input" id="subject-sel" onchange="updateChapters()">
+                  <option value="physics">Physics</option>
+                  <option value="chemistry">Chemistry</option>
+                  <option value="math">Mathematics</option>
+                  <option value="biology">Biology</option>
+                  <option value="history">History</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">Select Chapter</label>
+              <div id="chapters-list"
+                style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto">
+                <!-- Dynamically loaded -->
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">Notes Style</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <label class="chapter-card selected" id="style-brief" onclick="selectStyle('brief')">
+                  <span>⚡</span>
+                  <div>
+                    <div style="font-size:0.8rem;font-weight:700">Brief</div>
+                    <div style="font-size:0.68rem;color:var(--text-light)">Key points only</div>
+                  </div>
+                </label>
+                <label class="chapter-card" id="style-detailed" onclick="selectStyle('detailed')">
+                  <span>📖</span>
+                  <div>
+                    <div style="font-size:0.8rem;font-weight:700">Detailed</div>
+                    <div style="font-size:0.68rem;color:var(--text-light)">Full explanations</div>
+                  </div>
+                </label>
+                <label class="chapter-card" id="style-exam" onclick="selectStyle('exam')">
+                  <span>🎯</span>
+                  <div>
+                    <div style="font-size:0.8rem;font-weight:700">Exam Ready</div>
+                    <div style="font-size:0.68rem;color:var(--text-light)">Q&A format</div>
+                  </div>
+                </label>
+                <label class="chapter-card" id="style-visual" onclick="selectStyle('visual')">
+                  <span>🗺️</span>
+                  <div>
+                    <div style="font-size:0.8rem;font-weight:700">Visual</div>
+                    <div style="font-size:0.68rem;color:var(--text-light)">Mind map style</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">Language</label>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-primary btn-sm" id="lang-en" onclick="setLang('en',this)">🇬🇧 English</button>
+                <button class="btn btn-ghost btn-sm" id="lang-hi" onclick="setLang('hi',this)">🇮🇳 हिंदी</button>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-lg btn-full" onclick="generateNotes()">
+              ✨ Generate Notes
+            </button>
+          </div>
+        </div>
+
+        <!-- Tips -->
+        <div class="glass-sm" style="padding:16px">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px">💡
+            Smart Tips</div>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:6px">
+            <li style="font-size:0.78rem;color:var(--text-muted)">🔹 Notes are generated from your uploaded textbooks
+            </li>
+            <li style="font-size:0.78rem;color:var(--text-muted)">🔹 Context pruning reduces API cost by 70%</li>
+            <li style="font-size:0.78rem;color:var(--text-muted)">🔹 Notes can be exported as PDF or shared</li>
+            <li style="font-size:0.78rem;color:var(--text-muted)">🔹 Works offline once generated</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h4 style="font-size:0.9rem">📄 Preview</h4>
+          <div class="export-btns">
+            <button class="btn btn-outline btn-sm" onclick="showToast('Copying to clipboard...','info')">📋
+              Copy</button>
+            <button class="btn btn-outline btn-sm" onclick="showToast('Downloading PDF...','success')">📥 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="showToast('Saved to My PDFs','success')">💾 Save</button>
+          </div>
+        </div>
+
+        <div style="position:relative">
+          <div class="notes-preview" id="notes-preview">
+            <div style="text-align:center;padding:60px 20px;opacity:0.5">
+              <div style="font-size:3rem;margin-bottom:16px;animation:float 3s ease-in-out infinite">📝</div>
+              <h3 style="font-size:1rem;margin-bottom:8px">No Notes Yet</h3>
+              <p class="text-sm text-muted">Select a chapter and click "Generate Notes" to see AI-generated notes here.
+              </p>
+            </div>
+          </div>
+
+          <div class="generating-overlay" id="gen-overlay">
+            <div class="gen-spinner"></div>
+            <div style="text-align:center">
+              <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px">Generating Notes...</div>
+              <div class="text-sm text-muted" id="gen-status">Extracting relevant chapters...</div>
+            </div>
+            <div class="progress-bar" style="width:200px">
+              <div class="progress-fill" id="gen-bar" style="width:0"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    const chapters = {
+      physics: [
+        { num: 1, title: 'Motion', icon: '🏃' },
+        { num: 2, title: "Newton's Laws of Motion", icon: '⚡' },
+        { num: 3, title: 'Work, Energy and Power', icon: '💪' },
+        { num: 4, title: 'Gravitation', icon: '🌍' },
+        { num: 5, title: 'Light — Reflection', icon: '💡' },
+        { num: 6, title: 'Light — Refraction', icon: '🔭' },
+        { num: 7, title: 'Electricity', icon: '⚡' },
+        { num: 8, title: 'Magnetic Effects', icon: '🧲' },
+      ],
+      chemistry: [
+        { num: 1, title: 'Chemical Reactions', icon: '🧪' },
+        { num: 2, title: 'Acids, Bases and Salts', icon: '⚗️' },
+        { num: 3, title: 'Metals and Non-metals', icon: '🔩' },
+        { num: 4, title: 'Carbon Compounds', icon: '⚫' },
+        { num: 5, title: 'Periodic Classification', icon: '📊' },
+      ],
+      math: [
+        { num: 1, title: 'Real Numbers', icon: '🔢' },
+        { num: 2, title: 'Polynomials', icon: '📐' },
+        { num: 3, title: 'Pair of Linear Equations', icon: '📏' },
+        { num: 4, title: 'Quadratic Equations', icon: '🎯' },
+        { num: 5, title: 'Arithmetic Progressions', icon: '📈' },
+        { num: 6, title: 'Triangles', icon: '🔺' },
+        { num: 7, title: 'Coordinate Geometry', icon: '📍' },
+        { num: 8, title: 'Trigonometry', icon: '📐' },
+      ],
+      biology: [
+        { num: 1, title: 'Life Processes', icon: '🧬' },
+        { num: 2, title: 'Control and Coordination', icon: '🧠' },
+        { num: 3, title: 'Reproduction', icon: '🌱' },
+        { num: 4, title: 'Heredity and Evolution', icon: '🧬' },
+      ],
+      history: [
+        { num: 1, title: 'Rise of Nationalism', icon: '🌍' },
+        { num: 2, title: 'Nationalist Movement in Indo-China', icon: '🌏' },
+        { num: 3, title: 'Nationalism in India', icon: '🇮🇳' },
+        { num: 4, title: 'The Age of Industrialisation', icon: '🏭' },
+        { num: 5, title: 'Print Culture and the Modern World', icon: '📰' },
+      ]
+    };
+
+    let selectedChapter = 1;
+    let notesStyle = 'brief';
+
+    function updateChapters() {
+      const subject = document.getElementById('subject-sel').value;
+      const list = document.getElementById('chapters-list');
+      list.innerHTML = chapters[subject].map((c, i) => `
+    <div class="chapter-card ${i === 0 ? 'selected' : ''}" onclick="selectChapter(${c.num}, this)">
+      <div class="chapter-num">${c.num}</div>
+      <span style="font-size:1rem">${c.icon}</span>
+      <span style="font-size:0.82rem;font-weight:600">${c.title}</span>
+    </div>
+  `).join('');
+      selectedChapter = 1;
+    }
+
+    function selectChapter(num, el) {
+      document.querySelectorAll('#chapters-list .chapter-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedChapter = num;
+    }
+
+    function selectStyle(style) {
+      document.querySelectorAll('[id^="style-"]').forEach(s => s.classList.remove('selected'));
+      document.getElementById(`style-${style}`).classList.add('selected');
+      notesStyle = style;
+    }
+
+    function setLang(lang, btn) {
+      document.getElementById('lang-en').className = 'btn btn-ghost btn-sm';
+      document.getElementById('lang-hi').className = 'btn btn-ghost btn-sm';
+      btn.className = 'btn btn-primary btn-sm';
+    }
+
+    async function generateNotes() {
+      const overlay = document.getElementById('gen-overlay');
+      const statusEl = document.getElementById('gen-status');
+      const bar = document.getElementById('gen-bar');
+      overlay.classList.add('show');
+
+      const stages = ['Extracting relevant chapters...', 'Pruning irrelevant content...', 'Generating structured notes...', 'Formatting output...'];
+      for (let i = 0; i < stages.length; i++) {
+        statusEl.textContent = stages[i];
+        bar.style.width = ((i + 1) / stages.length * 100) + '%';
+        await new Promise(r => setTimeout(r, 700));
+      }
+
+      overlay.classList.remove('show');
+      bar.style.width = '0';
+
+      const subject = document.getElementById('subject-sel').value;
+      const ch = chapters[subject].find(c => c.num === selectedChapter);
+
+      document.getElementById('notes-preview').innerHTML = `
+    <div class="notes-h1">${ch.icon} Chapter ${ch.num}: ${ch.title}</div>
+    <div style="display:flex;gap:6px;margin-bottom:20px">
+      <span class="notes-tag">Class 10</span>
+      <span class="notes-tag">${subject.charAt(0).toUpperCase() + subject.slice(1)}</span>
+      <span class="notes-tag">AI Generated</span>
+    </div>
+    
+    <div class="notes-h2">📌 Key Concepts</div>
+    <ul class="notes-ul">
+      <li>Every action has an equal and opposite reaction</li>
+      <li>Force causes change in state of motion</li>
+      <li>Inertia is the tendency to resist change</li>
+      <li>Momentum = Mass × Velocity</li>
+    </ul>
+    
+    <div class="notes-h2">⚗️ Important Definitions</div>
+    <div class="notes-h3">Inertia</div>
+    <p>The tendency of an object to resist any change in its state of rest or uniform motion.</p>
+    
+    <div class="notes-h3">Force</div>
+    <p>A push or pull on an object that causes it to change its velocity, shape, or direction.</p>
+    
+    <div class="notes-h2">📐 Formulas</div>
+    <div class="notes-formula">F = ma &nbsp;&nbsp;(Force = Mass × Acceleration)</div>
+    <div class="notes-formula">p = mv &nbsp;&nbsp;(Momentum = Mass × Velocity)</div>
+    <div class="notes-formula">Impulse = F × t = Δp</div>
+    
+    <div class="notes-h2">🎯 Exam Points to Remember</div>
+    <div class="notes-box">
+      <ul class="notes-ul">
+        <li>Newton's 1st Law is also called Law of Inertia</li>
+        <li>SI unit of force is Newton (N)</li>
+        <li>1 Newton = 1 kg·m/s²</li>
+        <li>Newton's 3rd Law: Action-Reaction pairs act on different bodies</li>
+      </ul>
+    </div>
+    
+    <div class="notes-h2">💡 Examples from Daily Life</div>
+    <ul class="notes-ul">
+      <li>Bus suddenly stopping → passengers lurch forward (inertia)</li>
+      <li>Rocket propulsion (Newton's 3rd Law)</li>
+      <li>Recoil of gun when fired</li>
+    </ul>
+  `;
+      showToast('Notes generated successfully! ✨', 'success');
+    }
+
+    // Init
+    updateChapters();
+  </script>
+</body>
+
+</html>

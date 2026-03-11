@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Book — Remote Education Tutor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .upload-zone {
+      border: 2.5px dashed var(--primary-light);
+      border-radius: var(--radius);
+      padding: 64px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: rgba(79, 70, 229, 0.02);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.04), rgba(139, 92, 246, 0.03));
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-active {
+      border-color: var(--primary);
+      background: rgba(79, 70, 229, 0.05);
+      transform: scale(1.01);
+    }
+
+    .upload-zone:hover::before,
+    .upload-zone.drag-active::before {
+      opacity: 1;
+    }
+
+    .upload-icon-wrap {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(139, 92, 246, 0.08));
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      animation: float 3s ease-in-out infinite;
+      transition: var(--transition);
+    }
+
+    .upload-zone:hover .upload-icon-wrap {
+      transform: scale(1.1) rotate(-5deg);
+    }
+
+    .progress-card {
+      padding: 20px;
+    }
+
+    .file-progress-item {
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(79, 70, 229, 0.02);
+      margin-bottom: 10px;
+      animation: slideDown 0.3s ease;
+    }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .file-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: rgba(239, 68, 68, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .file-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size {
+      font-size: 0.72rem;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .file-status {
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .pdf-preview {
+      background: rgba(79, 70, 229, 0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .pdf-page-mock {
+      width: 100%;
+      max-width: 280px;
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    [data-theme="dark"] .pdf-page-mock {
+      background: rgba(30, 27, 75, 0.8);
+    }
+
+    .pdf-line {
+      height: 10px;
+      border-radius: 4px;
+      background: rgba(79, 70, 229, 0.1);
+      margin-bottom: 8px;
+    }
+
+    .proc-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .proc-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      transition: var(--transition);
+    }
+
+    .proc-step.done {
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .proc-step.active {
+      background: rgba(79, 70, 229, 0.08);
+    }
+
+    .proc-step.pending {
+      opacity: 0.5;
+    }
+
+    .step-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-dot.done {
+      background: var(--success);
+      color: white;
+    }
+
+    .step-dot.active {
+      background: var(--primary);
+      color: white;
+      animation: pulse-ring 1.5s infinite;
+    }
+
+    .step-dot.pending {
+      background: var(--border);
+      color: var(--text-light);
+    }
+  </style>
+</head>
+
+<body>
+
+  <script src="js/api.js"></script>
+  <script>requireAuth();</script>
+  <script src="js/layout.js"></script>
+  <script>renderLayout('Upload Book', 'upload.html');</script>
+
+  <main class="main-content page-content">
+    <div style="margin-bottom:24px">
+      <h2 style="font-size:1.4rem;margin-bottom:6px">Upload Textbook</h2>
+      <p class="text-muted text-sm">Upload your state-board PDFs. Our AI will index them for instant answers.</p>
+    </div>
+
+    <div class="grid-2" style="gap:24px">
+      <!-- Upload area + processing -->
+      <div>
+        <!-- Dropzone -->
+        <div class="upload-zone" id="dropzone" onclick="document.getElementById('file-input').click()"
+          ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <input type="file" id="file-input" accept=".pdf" multiple style="display:none"
+            onchange="handleFiles(this.files)">
+          <div class="upload-icon-wrap">📖</div>
+          <h3 style="font-size:1.1rem;margin-bottom:8px">Drop your PDF here</h3>
+          <p class="text-muted text-sm"
+            style="margin-bottom:20px;max-width:280px;margin-left:auto;margin-right:auto;line-height:1.6">
+            Drag &amp; drop your state-board textbooks (PDF) or click to browse
+          </p>
+          <button class="btn btn-primary"
+            onclick="event.stopPropagation();document.getElementById('file-input').click()">
+            📂 Browse Files
+          </button>
+          <p style="margin-top:14px;font-size:0.72rem;color:var(--text-light)">
+            Supports: PDF · Max size: 50MB per file
+          </p>
+        </div>
+
+        <!-- Subject & Class tags -->
+        <div class="card mt-4" style="padding:20px">
+          <h4 style="font-size:0.9rem;margin-bottom:14px">Book Details</h4>
+          <div class="form-stack" style="display:flex;flex-direction:column;gap:12px">
+            <div class="input-group">
+              <label class="input-label">Subject</label>
+              <div class="input-icon">
+                <span class="icon">📚</span>
+                <select class="input">
+                  <option>Physics</option>
+                  <option>Chemistry</option>
+                  <option>Mathematics</option>
+                  <option>Biology</option>
+                  <option>History</option>
+                  <option>Geography</option>
+                  <option>English</option>
+                  <option>Hindi</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="input-group">
+                <label class="input-label">Class</label>
+                <select class="input">
+                  <option>Class 9</option>
+                  <option selected>Class 10</option>
+                  <option>Class 11</option>
+                  <option>Class 12</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label class="input-label">Board</label>
+                <select class="input">
+                  <option>CBSE</option>
+                  <option>UP Board</option>
+                  <option>Bihar Board</option>
+                  <option>RBSE</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Language</label>
+              <div style="display:flex;gap:8px">
+                <label
+                  style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);transition:var(--transition)"
+                  onclick="this.style.borderColor='var(--primary)'">
+                  <input type="radio" name="lang" value="english" checked style="accent-color:var(--primary)"> English
+                </label>
+                <label
+                  style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);transition:var(--transition)">
+                  <input type="radio" name="lang" value="hindi" style="accent-color:var(--primary)"> हिंदी
+                </label>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="startUpload()">
+              🚀 Upload & Process Book
+            </button>
+          </div>
+        </div>
+
+        <!-- File Progress -->
+        <div id="progress-section" style="display:none" class="mt-4">
+          <div class="card progress-card">
+            <h4 style="font-size:0.9rem;margin-bottom:14px">Upload Progress</h4>
+            <div id="file-progress-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview + Processing Steps -->
+      <div>
+        <div class="card mb-4">
+          <div class="flex items-center justify-between mb-4">
+            <h4 style="font-size:0.9rem">PDF Preview</h4>
+            <span class="badge badge-primary" id="preview-status">No file selected</span>
+          </div>
+          <div class="pdf-preview" id="pdf-preview">
+            <div style="font-size:2.5rem;opacity:0.3;animation:float 3s ease-in-out infinite">📄</div>
+            <p class="text-muted text-sm">PDF preview will appear here</p>
+            <p style="font-size:0.72rem;color:var(--text-light)">Select a file to preview</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4 style="font-size:0.9rem;margin-bottom:16px">Processing Pipeline</h4>
+          <div class="proc-steps" id="proc-steps">
+            <div class="proc-step pending" id="ps-1">
+              <div class="step-dot pending">1</div>
+              <div>
+                <div style="font-weight:600;font-size:0.82rem">PDF Upload</div>
+                <div style="font-size:0.72rem;color:var(--text-light)">Uploading file to server</div>
+              </div>
+            </div>
+            <div class="proc-step pending" id="ps-2">
+              <div class="step-dot pending">2</div>
+              <div>
+                <div style="font-weight:600;font-size:0.82rem">Text Extraction</div>
+                <div style="font-size:0.72rem;color:var(--text-light)">Extracting text from pages</div>
+              </div>
+            </div>
+            <div class="proc-step pending" id="ps-3">
+              <div class="step-dot pending">3</div>
+              <div>
+                <div style="font-weight:600;font-size:0.82rem">Chapter Detection</div>
+                <div style="font-size:0.72rem;color:var(--text-light)">Identifying chapters & topics</div>
+              </div>
+            </div>
+            <div class="proc-step pending" id="ps-4">
+              <div class="step-dot pending">4</div>
+              <div>
+                <div style="font-weight:600;font-size:0.82rem">Context Indexing</div>
+                <div style="font-size:0.72rem;color:var(--text-light)">Building AI retrieval index</div>
+              </div>
+            </div>
+            <div class="proc-step pending" id="ps-5">
+              <div class="step-dot pending">5</div>
+              <div>
+                <div style="font-weight:600;font-size:0.82rem">Ready for Queries</div>
+                <div style="font-size:0.72rem;color:var(--text-light)">AI tutor can now answer questions</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Uploads -->
+    <div class="card mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <h4 style="font-size:0.9rem">Recent Uploads</h4>
+        <a href="pdfs.html" style="font-size:0.8rem;color:var(--primary);text-decoration:none">View all →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
+        <div class="glass-sm" style="padding:16px;cursor:pointer;transition:var(--transition)"
+          onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:1.8rem;margin-bottom:10px">📗</div>
+          <div style="font-size:0.85rem;font-weight:700;margin-bottom:4px">Class 10 Physics</div>
+          <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:10px">NCERT · 380 pages</div>
+          <span class="badge badge-success" style="font-size:0.68rem">✓ Indexed</span>
+        </div>
+        <div class="glass-sm" style="padding:16px;cursor:pointer;transition:var(--transition)"
+          onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:1.8rem;margin-bottom:10px">📘</div>
+          <div style="font-size:0.85rem;font-weight:700;margin-bottom:4px">Class 10 Math</div>
+          <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:10px">NCERT · 420 pages</div>
+          <span class="badge badge-success" style="font-size:0.68rem">✓ Indexed</span>
+        </div>
+        <div class="glass-sm" style="padding:16px;cursor:pointer;transition:var(--transition)"
+          onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:1.8rem;margin-bottom:10px">📙</div>
+          <div style="font-size:0.85rem;font-weight:700;margin-bottom:4px">Class 10 Chemistry</div>
+          <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:10px">UP Board · 290 pages</div>
+          <span class="badge badge-warning" style="font-size:0.68rem">⟳ Processing</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    let selectedFile = null;
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      document.getElementById('dropzone').classList.add('drag-active');
+    }
+    function handleDragLeave() {
+      document.getElementById('dropzone').classList.remove('drag-active');
+    }
+    function handleDrop(e) {
+      e.preventDefault();
+      document.getElementById('dropzone').classList.remove('drag-active');
+      const files = e.dataTransfer.files;
+      if (files.length) handleFiles(files);
+    }
+    function handleFiles(files) {
+      if (!files.length) return;
+      const file = files[0];
+      if (!file.name.toLowerCase().endsWith('.pdf') && !file.name.toLowerCase().endsWith('.txt') && !file.name.toLowerCase().endsWith('.md')) {
+        showToast('Only PDF, TXT, and MD files are supported', 'error');
+        return;
+      }
+      selectedFile = file;
+      document.getElementById('preview-status').textContent = file.name;
+      document.getElementById('preview-status').className = 'badge badge-accent';
+
+      document.getElementById('pdf-preview').innerHTML = `
+    <div class="pdf-page-mock">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <span style="font-size:1.2rem">📖</span>
+        <span style="font-size:0.8rem;font-weight:700">${file.name}</span>
+      </div>
+      <div class="pdf-line" style="width:90%"></div>
+      <div class="pdf-line" style="width:75%"></div>
+      <div class="pdf-line" style="width:85%"></div>
+      <div class="pdf-line" style="width:60%;margin-top:12px"></div>
+      <div class="pdf-line" style="width:80%"></div>
+      <div class="pdf-line" style="width:70%"></div>
+      <div class="pdf-line" style="width:90%;margin-top:12px"></div>
+      <div class="pdf-line" style="width:45%"></div>
+    </div>
+    <p class="text-sm text-muted" style="margin-top:12px">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+  `;
+      showToast(`File selected: ${file.name}`, 'info');
+    }
+
+    async function startUpload() {
+      if (!selectedFile) {
+        showToast('Please select a file first', 'error');
+        return;
+      }
+
+      const section = document.getElementById('progress-section');
+      section.style.display = 'block';
+
+      document.getElementById('file-progress-list').innerHTML = `
+    <div class="file-progress-item">
+      <div class="file-info">
+        <div class="file-icon">📕</div>
+        <div class="file-details">
+          <div class="file-name">${selectedFile.name}</div>
+          <div class="file-size">${(selectedFile.size / 1024 / 1024).toFixed(2)} MB</div>
+        </div>
+        <span class="file-status" style="color:var(--primary)" id="upload-status">Uploading...</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="upload-bar" style="width:0"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px">
+        <span class="text-xs text-light" id="upload-pct">0%</span>
+        <span class="text-xs text-light" id="upload-speed">Uploading...</span>
+      </div>
+    </div>
+  `;
+
+      // Mark pipeline step 1 active
+      setStep(1, 'active');
+
+      try {
+        const result = await DocumentsAPI.upload(selectedFile, (pct) => {
+          document.getElementById('upload-bar').style.width = pct + '%';
+          document.getElementById('upload-pct').textContent = pct + '%';
+        });
+
+        document.getElementById('upload-bar').style.width = '100%';
+        document.getElementById('upload-pct').textContent = '100%';
+        document.getElementById('upload-status').textContent = '✓ Complete';
+        document.getElementById('upload-status').style.color = 'var(--success)';
+        document.getElementById('upload-speed').textContent = `${result.document.chunk_count} chunks indexed`;
+
+        await runPipeline();
+
+        showToast(`'${result.document.filename}' indexed! Ready for AI queries 🎉`, 'success');
+        loadRecentUploads();
+      } catch (err) {
+        document.getElementById('upload-status').textContent = '✗ Failed';
+        document.getElementById('upload-status').style.color = 'var(--danger)';
+        showToast(err.message || 'Upload failed. Check the backend is running.', 'error');
+      }
+    }
+
+    function setStep(n, state) {
+      const el = document.getElementById(`ps-${n}`);
+      if (!el) return;
+      const dot = el.querySelector('.step-dot');
+      el.className = `proc-step ${state}`;
+      dot.className = `step-dot ${state}`;
+      if (state === 'done') dot.textContent = '✓';
+    }
+
+    async function runPipeline() {
+      const delays = [300, 600, 500, 800, 400];
+      for (let i = 1; i <= 5; i++) {
+        if (i > 1) setStep(i - 1, 'done');
+        setStep(i, 'active');
+        await new Promise(r => setTimeout(r, delays[i - 1]));
+      }
+      setStep(5, 'done');
+    }
+
+    async function loadRecentUploads() {
+      try {
+        const docs = await DocumentsAPI.list();
+        const container = document.querySelector('.card.mt-6 > div:last-child');
+        if (!container || !docs.length) return;
+        container.innerHTML = docs.slice(0, 6).map(doc => `
+        <div class="glass-sm" style="padding:16px;cursor:pointer;transition:var(--transition)"
+          onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:1.8rem;margin-bottom:10px">${doc.doc_type === 'pdf' ? '📗' : '📄'}</div>
+          <div style="font-size:0.85rem;font-weight:700;margin-bottom:4px">${doc.filename}</div>
+          <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:10px">${(doc.original_size / 1024 / 1024).toFixed(1)} MB · ${doc.chunk_count} chunks</div>
+          <span class="badge badge-success" style="font-size:0.68rem">✓ Indexed</span>
+        </div>
+      `).join('');
+      } catch (_) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', loadRecentUploads);
+  </script>
+</body>
+
+</html>

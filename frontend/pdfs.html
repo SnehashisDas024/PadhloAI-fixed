@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My PDFs — Remote Education Tutor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .pdf-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: var(--transition);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pdf-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: var(--radius) var(--radius) 0 0;
+      transition: var(--transition);
+      opacity: 0;
+    }
+
+    .pdf-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .pdf-card:hover::before {
+      opacity: 1;
+    }
+
+    .pdf-card.notes::before {
+      background: linear-gradient(90deg, var(--primary), var(--accent2));
+    }
+
+    .pdf-card.test::before {
+      background: linear-gradient(90deg, var(--warning), #f97316);
+    }
+
+    .pdf-card.book::before {
+      background: linear-gradient(90deg, var(--success), var(--accent));
+    }
+
+    .pdf-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 14px;
+      transition: var(--transition);
+    }
+
+    .pdf-card:hover .pdf-icon-wrap {
+      transform: rotate(-5deg) scale(1.05);
+    }
+
+    .pdf-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+
+    .pdf-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .filter-tab {
+      padding: 7px 16px;
+      border-radius: 99px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+      background: transparent;
+    }
+
+    .filter-tab.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .storage-bar {
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(79, 70, 229, 0.1);
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .storage-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--primary), var(--accent2));
+      transition: width 1.2s ease;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .list-item:hover {
+      background: rgba(79, 70, 229, 0.04);
+      border-color: var(--primary-light);
+      transform: translateX(4px);
+    }
+
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      background: rgba(79, 70, 229, 0.06);
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .view-btn {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: var(--transition);
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .view-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    [data-theme="dark"] .view-btn.active {
+      background: rgba(79, 70, 229, 0.2);
+    }
+  </style>
+</head>
+
+<body>
+
+  <script src="js/api.js"></script>
+  <script>requireAuth();</script>
+  <script src="js/layout.js"></script>
+  <script>renderLayout('My PDFs', 'pdfs.html');</script>
+
+  <main class="main-content page-content">
+
+    <!-- Header -->
+    <div
+      style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="font-size:1.4rem;margin-bottom:4px">My PDFs</h2>
+        <p class="text-muted text-sm">All your generated notes, tests, and uploaded books in one place.</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div class="search-bar">
+          <input type="text" class="input" placeholder="Search PDFs..." style="width:220px;padding-left:40px"
+            oninput="filterPDFs(this.value)">
+        </div>
+        <a href="upload.html" class="btn btn-primary">+ Upload Book</a>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="card mb-6" style="padding:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:1.4rem;font-weight:800;font-family:'Sora',sans-serif;color:var(--primary)">24</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">Total Files</div>
+          </div>
+          <div>
+            <div style="font-size:1.4rem;font-weight:800;font-family:'Sora',sans-serif;color:var(--success)">12</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">Notes</div>
+          </div>
+          <div>
+            <div style="font-size:1.4rem;font-weight:800;font-family:'Sora',sans-serif;color:var(--warning)">8</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">Test Reports</div>
+          </div>
+          <div>
+            <div style="font-size:1.4rem;font-weight:800;font-family:'Sora',sans-serif;color:var(--accent)">4</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">Textbooks</div>
+          </div>
+        </div>
+        <div style="min-width:180px">
+          <div
+            style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">
+            <span>Storage Used</span>
+            <span>36.5 MB / 100 MB</span>
+          </div>
+          <div class="storage-bar">
+            <div class="storage-fill" id="storage-bar" style="width:0"></div>
+          </div>
+          <div style="font-size:0.68rem;color:var(--text-light)">36% used · 63.5 MB free</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters & View Toggle -->
+    <div
+      style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="filter-tab active" onclick="setFilter('all',this)">All (24)</button>
+        <button class="filter-tab" onclick="setFilter('notes',this)">📝 Notes (12)</button>
+        <button class="filter-tab" onclick="setFilter('test',this)">📋 Tests (8)</button>
+        <button class="filter-tab" onclick="setFilter('book',this)">📚 Books (4)</button>
+      </div>
+      <div class="view-toggle">
+        <button class="view-btn active" id="grid-btn" onclick="setView('grid',this)">⊞ Grid</button>
+        <button class="view-btn" id="list-btn" onclick="setView('list',this)">☰ List</button>
+      </div>
+    </div>
+
+    <!-- Grid View -->
+    <div id="grid-view" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+
+      <div class="pdf-card notes">
+        <div class="pdf-icon-wrap" style="background:rgba(79,70,229,0.1)">📝</div>
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:4px;line-height:1.3">Newton's Laws — Chapter Notes
+        </div>
+        <div class="pdf-meta">
+          <span class="badge badge-primary" style="font-size:0.65rem">Notes</span>
+          <span class="badge badge-accent" style="font-size:0.65rem">Physics</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-light)">2.4 MB · Dec 22, 2025</div>
+        <div class="pdf-actions">
+          <button class="btn btn-outline btn-sm" onclick="showToast('Downloading...','success')" style="flex:1">📥
+            Download</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Shared via link!','success')">🔗</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteFile(this.closest('.pdf-card'))">🗑️</button>
+        </div>
+      </div>
+
+      <div class="pdf-card test">
+        <div class="pdf-icon-wrap" style="background:rgba(245,158,11,0.1)">📋</div>
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:4px;line-height:1.3">Physics Test Report — 88%</div>
+        <div class="pdf-meta">
+          <span class="badge badge-warning" style="font-size:0.65rem">Test Report</span>
+          <span class="badge badge-success" style="font-size:0.65rem">88%</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-light)">1.1 MB · Dec 21, 2025</div>
+        <div class="pdf-actions">
+          <button class="btn btn-outline btn-sm" onclick="showToast('Downloading...','success')" style="flex:1">📥
+            Download</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Shared!','success')">🔗</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteFile(this.closest('.pdf-card'))">🗑️</button>
+        </div>
+      </div>
+
+      <div class="pdf-card book">
+        <div class="pdf-icon-wrap" style="background:rgba(16,185,129,0.1)">📗</div>
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:4px;line-height:1.3">NCERT Class 10 Physics</div>
+        <div class="pdf-meta">
+          <span class="badge badge-success" style="font-size:0.65rem">Textbook</span>
+          <span class="badge"
+            style="font-size:0.65rem;background:rgba(16,185,129,0.1);color:var(--success)">Indexed</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-light)">8.4 MB · Dec 20, 2025 · 380 pages</div>
+        <div class="pdf-actions">
+          <button class="btn btn-outline btn-sm" onclick="showToast('Downloading...','success')" style="flex:1">📥
+            Download</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Shared!','success')">🔗</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteFile(this.closest('.pdf-card'))">🗑️</button>
+        </div>
+      </div>
+
+      <div class="pdf-card notes">
+        <div class="pdf-icon-wrap" style="background:rgba(79,70,229,0.1)">📝</div>
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:4px;line-height:1.3">Quadratic Equations — Full Notes
+        </div>
+        <div class="pdf-meta">
+          <span class="badge badge-primary" style="font-size:0.65rem">Notes</span>
+          <span class="badge" style="font-size:0.65rem;background:rgba(139,92,246,0.1);color:var(--accent2)">Math</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-light)">1.8 MB · Dec 19, 2025</div>
+        <div class="pdf-actions">
+          <button class="btn btn-outline btn-sm" onclick="showToast('Downloading...','success')" style="flex:1">📥
+            Download</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Shared!','success')">🔗</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteFile(this.closest('.pdf-card'))">🗑️</button>
+        </div>
+      </div>
+
+      <div class="pdf-card test">
+        <div class="pdf-icon-wrap" style="background:rgba(239,68,68,0.1)">📊</div>
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:4px;line-height:1.3">Chemistry Test — 74%</div>
+        <div class="pdf-meta">
+          <span class="badge badge-warning" style="font-size:0.65rem">Test Report</span>
+          <span class="badge badge-warning" style="font-size:0.65rem">74%</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-light)">0.9 MB · Dec 18, 2025</div>
+        <div class="pdf-actions">
+          <button class="btn btn-outline btn-sm" onclick="showToast('Downloading...','success')" style="flex:1">📥
+            Download</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Shared!','success')">🔗</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteFile(this.closest('.pdf-card'))">🗑️</button>
+        </div>
+      </div>
+
+      <div class="pdf-card book">
+        <div class="pdf-icon-wrap" style="background:rgba(6,182,212,0.1)">📘</div>
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:4px;line-height:1.3">NCERT Class 10 Mathematics</div>
+        <div class="pdf-meta">
+          <span class="badge badge-success" style="font-size:0.65rem">Textbook</span>
+          <span class="badge"
+            style="font-size:0.65rem;background:rgba(16,185,129,0.1);color:var(--success)">Indexed</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-light)">9.1 MB · Dec 17, 2025 · 420 pages</div>
+        <div class="pdf-actions">
+          <button class="btn btn-outline btn-sm" onclick="showToast('Downloading...','success')" style="flex:1">📥
+            Download</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Shared!','success')">🔗</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteFile(this.closest('.pdf-card'))">🗑️</button>
+        </div>
+      </div>
+
+      <div class="pdf-card notes">
+        <div class="pdf-icon-wrap" style="background:rgba(139,92,246,0.1)">📝</div>
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:4px;line-height:1.3">Indian Independence — Exam Notes
+        </div>
+        <div class="pdf-meta">
+          <span class="badge badge-primary" style="font-size:0.65rem">Notes</span>
+          <span class="badge"
+            style="font-size:0.65rem;background:rgba(6,182,212,0.1);color:var(--accent)">History</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-light)">1.5 MB · Dec 16, 2025</div>
+        <div class="pdf-actions">
+          <button class="btn btn-outline btn-sm" onclick="showToast('Downloading...','success')" style="flex:1">📥
+            Download</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('Shared!','success')">🔗</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteFile(this.closest('.pdf-card'))">🗑️</button>
+        </div>
+      </div>
+
+      <!-- Empty add card -->
+      <div onclick="window.location.href='notes.html'"
+        style="border:2.5px dashed var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:var(--transition);min-height:180px"
+        onmouseover="this.style.borderColor='var(--primary)';this.style.background='rgba(79,70,229,0.04)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.background=''">
+        <div style="font-size:2rem;opacity:0.3">+</div>
+        <div style="font-size:0.8rem;font-weight:600;color:var(--text-light)">Generate New Notes</div>
+      </div>
+    </div>
+
+    <!-- List View (hidden) -->
+    <div id="list-view" style="display:none;flex-direction:column;gap:8px">
+      <!-- Generated dynamically -->
+    </div>
+
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    let allDocs = [];
+
+    async function loadPDFs() {
+      try {
+        allDocs = await DocumentsAPI.list();
+        renderGrid(allDocs);
+        updateStats(allDocs);
+        // Animate storage bar based on real data
+        const totalMB = allDocs.reduce((sum, d) => sum + (d.original_size || 0), 0) / 1024 / 1024;
+        const pct = Math.min((totalMB / 100) * 100, 100).toFixed(1);
+        setTimeout(() => {
+          document.getElementById('storage-bar').style.width = pct + '%';
+        }, 300);
+      } catch(_) {
+        setTimeout(() => { document.getElementById('storage-bar').style.width = '36.5%'; }, 300);
+      }
+    }
+
+    function updateStats(docs) {
+      const totalEl = document.querySelector('.card.mb-6 div:first-child .n, .card.mb-6 div:first-child div:first-child');
+      const statsEls = document.querySelectorAll('.card.mb-6 [style*="font-weight:800"]');
+      if (statsEls[0]) statsEls[0].textContent = docs.length;
+    }
+
+    function renderGrid(docs) {
+      const grid = document.getElementById('grid-view');
+      if (!docs.length) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;opacity:0.5">
+          <div style="font-size:3rem;margin-bottom:16px">📭</div>
+          <h3>No documents yet</h3>
+          <p class="text-muted text-sm" style="margin:8px 0 16px">Upload your first textbook to get started</p>
+          <a href="upload.html" class="btn btn-primary">+ Upload Book</a>
+        </div>`;
+        return;
+      }
+
+      const cards = docs.map(doc => `
+        <div class="pdf-card book" data-id="${doc.id}" data-name="${doc.filename.toLowerCase()}">
+          <div class="pdf-icon-wrap" style="background:rgba(16,185,129,0.1)">${doc.doc_type==='pdf'?'📗':'📄'}</div>
+          <div style="font-size:0.9rem;font-weight:700;margin-bottom:4px;line-height:1.3">${doc.filename}</div>
+          <div class="pdf-meta">
+            <span class="badge badge-success" style="font-size:0.65rem">Textbook</span>
+            <span class="badge" style="font-size:0.65rem;background:rgba(16,185,129,0.1);color:var(--success)">Indexed</span>
+          </div>
+          <div style="font-size:0.72rem;color:var(--text-light)">${(doc.original_size/1024/1024).toFixed(1)} MB · ${doc.chunk_count} chunks</div>
+          <div class="pdf-actions">
+            <button class="btn btn-outline btn-sm" onclick="showToast('Download not available for server-stored files','info')" style="flex:1">📥 Download</button>
+            <button class="btn btn-ghost btn-sm" onclick="showToast('Link copied!','success')">🔗</button>
+            <button class="btn btn-ghost btn-sm" onclick="deleteDoc(${doc.id},this.closest('.pdf-card'))">🗑️</button>
+          </div>
+        </div>`).join('');
+
+      const addCard = `
+        <div onclick="window.location.href='notes.html'"
+          style="border:2.5px dashed var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:var(--transition);min-height:180px"
+          onmouseover="this.style.borderColor='var(--primary)';this.style.background='rgba(79,70,229,0.04)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.background=''">
+          <div style="font-size:2rem;opacity:0.3">+</div>
+          <div style="font-size:0.8rem;font-weight:600;color:var(--text-light)">Generate New Notes</div>
+        </div>`;
+
+      grid.innerHTML = cards + addCard;
+    }
+
+    function setFilter(type, btn) {
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      const filtered = type === 'all' ? allDocs : allDocs.filter(d => d.doc_type === type);
+      renderGrid(filtered);
+    }
+
+    function setView(view, btn) {
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (view === 'list') {
+        document.getElementById('grid-view').style.display = 'none';
+        const list = document.getElementById('list-view');
+        list.style.display = 'flex';
+        list.innerHTML = allDocs.map(doc => `
+          <div class="list-item" data-id="${doc.id}">
+            <div style="font-size:1.3rem;flex-shrink:0">${doc.doc_type==='pdf'?'📗':'📄'}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.85rem;font-weight:700">${doc.filename}</div>
+              <div style="font-size:0.72rem;color:var(--text-light)">Textbook · ${doc.chunk_count} chunks</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+              <span style="font-size:0.75rem;color:var(--text-light)">${(doc.original_size/1024/1024).toFixed(1)} MB</span>
+              <span class="badge badge-success" style="font-size:0.65rem">Indexed</span>
+              <button class="btn btn-ghost btn-sm" onclick="deleteDoc(${doc.id},this.closest('.list-item'))">🗑️</button>
+            </div>
+          </div>`).join('');
+      } else {
+        document.getElementById('list-view').style.display = 'none';
+        document.getElementById('grid-view').style.display = 'grid';
+      }
+    }
+
+    function filterPDFs(query) {
+      const cards = document.querySelectorAll('.pdf-card, .list-item');
+      cards.forEach(card => {
+        const name = (card.dataset.name || card.querySelector('[style*="font-weight:700"]')?.textContent || '').toLowerCase();
+        card.style.display = !query || name.includes(query.toLowerCase()) ? '' : 'none';
+      });
+    }
+
+    async function deleteDoc(id, el) {
+      if (!confirm('Delete this document? This cannot be undone.')) return;
+      try {
+        await DocumentsAPI.delete(id);
+        el.style.transition = 'all 0.3s ease';
+        el.style.transform = 'scale(0.8)';
+        el.style.opacity = '0';
+        setTimeout(() => { el.remove(); allDocs = allDocs.filter(d => d.id !== id); updateStats(allDocs); }, 300);
+        showToast('Document deleted', 'success');
+      } catch(err) {
+        showToast('Delete failed: ' + err.message, 'error');
+      }
+    }
+
+    // Legacy alias
+    function deleteFile(el) { el.style.transition='all 0.3s ease'; el.style.transform='scale(0.8)'; el.style.opacity='0'; setTimeout(()=>el.remove(),300); showToast('File deleted','success'); }
+
+    document.addEventListener('DOMContentLoaded', loadPDFs);
+  </script>
+</body>
+
+</html>

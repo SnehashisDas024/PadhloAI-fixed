@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Generator — Remote Education Tutor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .difficulty-btn {
+      flex: 1;
+      padding: 12px 8px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      text-align: center;
+      transition: var(--transition);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+    }
+
+    .difficulty-btn:hover {
+      border-color: var(--primary);
+    }
+
+    .difficulty-btn.active {
+      border-color: var(--primary);
+      background: rgba(79, 70, 229, 0.1);
+      color: var(--primary);
+    }
+
+    .difficulty-btn.easy.active {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+    }
+
+    .difficulty-btn.medium.active {
+      border-color: var(--warning);
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+    }
+
+    .difficulty-btn.hard.active {
+      border-color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
+
+    .question-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: var(--transition);
+      animation: slideDown 0.3s ease;
+    }
+
+    .question-card:hover {
+      box-shadow: var(--shadow);
+    }
+
+    .question-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(79, 70, 229, 0.1);
+      color: var(--primary);
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    .test-timer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-weight: 700;
+      color: var(--danger);
+      font-family: 'Sora', sans-serif;
+      font-size: 1rem;
+    }
+
+    .result-card {
+      text-align: center;
+      padding: 32px;
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.06), rgba(139, 92, 246, 0.04));
+      border-radius: var(--radius);
+      border: 1px solid rgba(79, 70, 229, 0.15);
+    }
+
+    .score-circle {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: conic-gradient(var(--primary) 0% var(--score-pct, 0%), rgba(79, 70, 229, 0.1) 0%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      position: relative;
+    }
+
+    .score-inner {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Sora', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 800;
+    }
+  </style>
+</head>
+
+<body>
+
+  <script src="js/api.js"></script>
+  <script>requireAuth();</script>
+  <script src="js/layout.js"></script>
+  <script>renderLayout('Test Generator', 'test.html');</script>
+
+  <main class="main-content page-content">
+    <div style="margin-bottom:24px">
+      <h2 style="font-size:1.4rem;margin-bottom:6px">Test Generator</h2>
+      <p class="text-muted text-sm">Generate custom MCQ tests from your textbooks. Practice and track progress.</p>
+    </div>
+
+    <!-- Config + Test -->
+    <div id="config-view">
+      <div class="grid-2" style="gap:24px">
+        <!-- Configuration -->
+        <div class="card">
+          <h4 style="font-size:0.9rem;margin-bottom:18px">⚙️ Test Configuration</h4>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="input-group">
+              <label class="input-label">Subject</label>
+              <div class="input-icon">
+                <span class="icon">📚</span>
+                <select class="input">
+                  <option>Physics — Chapter 2: Newton's Laws</option>
+                  <option>Chemistry — Chapter 1: Chemical Reactions</option>
+                  <option>Mathematics — Chapter 4: Quadratic Equations</option>
+                  <option>Biology — Chapter 1: Life Processes</option>
+                  <option>History — Chapter 3: Nationalism in India</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">Difficulty Level</label>
+              <div style="display:flex;gap:8px">
+                <button class="difficulty-btn easy active" id="diff-easy" onclick="setDiff('easy')">🟢 Easy</button>
+                <button class="difficulty-btn medium" id="diff-medium" onclick="setDiff('medium')">🟡 Medium</button>
+                <button class="difficulty-btn hard" id="diff-hard" onclick="setDiff('hard')">🔴 Hard</button>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">Number of Questions</label>
+              <div style="display:flex;gap:8px">
+                <button class="difficulty-btn" id="q5" onclick="setQCount(5,this)">5</button>
+                <button class="difficulty-btn active" id="q10" onclick="setQCount(10,this)">10</button>
+                <button class="difficulty-btn" id="q15" onclick="setQCount(15,this)">15</button>
+                <button class="difficulty-btn" id="q20" onclick="setQCount(20,this)">20</button>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">Time Limit</label>
+              <div style="display:flex;gap:8px">
+                <button class="difficulty-btn" onclick="setTime(5,this)">5 min</button>
+                <button class="difficulty-btn active" onclick="setTime(10,this)">10 min</button>
+                <button class="difficulty-btn" onclick="setTime(15,this)">15 min</button>
+                <button class="difficulty-btn" onclick="setTime(0,this)">No limit</button>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px">
+              <label
+                style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;padding:10px;border-radius:8px;border:1px solid var(--border);flex:1">
+                <input type="checkbox" checked style="accent-color:var(--primary)"> Shuffle Questions
+              </label>
+              <label
+                style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;padding:10px;border-radius:8px;border:1px solid var(--border);flex:1">
+                <input type="checkbox" checked style="accent-color:var(--primary)"> Show Explanations
+              </label>
+            </div>
+
+            <button class="btn btn-primary btn-lg btn-full" onclick="generateTest()">
+              🚀 Generate Test
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats & History -->
+        <div>
+          <div class="card mb-4">
+            <h4 style="font-size:0.9rem;margin-bottom:16px">📊 Your Performance</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div style="padding:14px;border-radius:10px;background:rgba(79,70,229,0.05);text-align:center">
+                <div style="font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:var(--primary)">24
+                </div>
+                <div style="font-size:0.72rem;color:var(--text-muted)">Tests Taken</div>
+              </div>
+              <div style="padding:14px;border-radius:10px;background:rgba(16,185,129,0.05);text-align:center">
+                <div style="font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:var(--success)">82%
+                </div>
+                <div style="font-size:0.72rem;color:var(--text-muted)">Avg Score</div>
+              </div>
+              <div style="padding:14px;border-radius:10px;background:rgba(245,158,11,0.05);text-align:center">
+                <div style="font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:var(--warning)">95%
+                </div>
+                <div style="font-size:0.72rem;color:var(--text-muted)">Best Score</div>
+              </div>
+              <div style="padding:14px;border-radius:10px;background:rgba(6,182,212,0.05);text-align:center">
+                <div style="font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:var(--accent)">7.2m
+                </div>
+                <div style="font-size:0.72rem;color:var(--text-muted)">Avg Time</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4 style="font-size:0.9rem;margin-bottom:14px">🕐 Recent Tests</h4>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div
+                style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;border:1px solid var(--border)">
+                <span style="font-size:1rem">⚛️</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:0.82rem;font-weight:600">Newton's Laws</div>
+                  <div style="font-size:0.7rem;color:var(--text-light)">10 questions · 8 min ago</div>
+                </div>
+                <span class="badge badge-success">88%</span>
+              </div>
+              <div
+                style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;border:1px solid var(--border)">
+                <span style="font-size:1rem">🧪</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:0.82rem;font-weight:600">Acid, Bases & Salts</div>
+                  <div style="font-size:0.7rem;color:var(--text-light)">15 questions · Yesterday</div>
+                </div>
+                <span class="badge badge-warning">74%</span>
+              </div>
+              <div
+                style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;border:1px solid var(--border)">
+                <span style="font-size:1rem">📐</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:0.82rem;font-weight:600">Quadratic Equations</div>
+                  <div style="font-size:0.7rem;color:var(--text-light)">10 questions · 2 days ago</div>
+                </div>
+                <span class="badge badge-success">95%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test View (hidden by default) -->
+    <div id="test-view" style="display:none">
+      <div
+        style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h3 style="font-size:1rem">Newton's Laws of Motion — Test</h3>
+          <p class="text-sm text-muted" id="q-progress">Question 1 of 10</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="test-timer" id="timer">⏱️ 10:00</div>
+          <button class="btn btn-outline btn-sm" onclick="submitTest()">Submit Test</button>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-bar mb-6" style="height:8px">
+        <div class="progress-fill" id="test-progress" style="width:10%"></div>
+      </div>
+
+      <div id="questions-container"></div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:24px">
+        <button class="btn btn-outline" id="prev-btn" onclick="prevQ()" disabled>← Previous</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center" id="q-dots"></div>
+        <button class="btn btn-primary" id="next-btn" onclick="nextQ()">Next →</button>
+      </div>
+    </div>
+
+    <!-- Result View -->
+    <div id="result-view" style="display:none">
+      <div class="result-card">
+        <div class="score-circle" id="score-circle">
+          <div class="score-inner" id="score-display">0%</div>
+        </div>
+        <h2 style="font-size:1.4rem;margin-bottom:8px" id="result-title">Well Done!</h2>
+        <p class="text-muted text-sm" id="result-sub">You scored 8 out of 10 questions correctly</p>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:360px;margin:24px auto">
+          <div style="padding:12px;border-radius:10px;background:rgba(16,185,129,0.08)">
+            <div style="font-size:1.3rem;font-weight:800;color:var(--success)" id="correct-count">0</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">Correct</div>
+          </div>
+          <div style="padding:12px;border-radius:10px;background:rgba(239,68,68,0.08)">
+            <div style="font-size:1.3rem;font-weight:800;color:var(--danger)" id="wrong-count">0</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">Wrong</div>
+          </div>
+          <div style="padding:12px;border-radius:10px;background:rgba(245,158,11,0.08)">
+            <div style="font-size:1.3rem;font-weight:800;color:var(--warning)" id="time-taken">0:00</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">Time</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+          <button class="btn btn-outline" onclick="reviewAnswers()">📋 Review Answers</button>
+          <button class="btn btn-primary" onclick="retakeTest()">🔄 Retake Test</button>
+          <button class="btn btn-ghost"
+            onclick="document.getElementById('config-view').style.display='block';document.getElementById('result-view').style.display='none'">⚙️
+            New Test</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    // Real questions loaded from backend; fallback to built-in set if no docs uploaded
+    let questions = [];
+    let activeDocumentId = null;
+    let difficulty = 'easy';
+    let qCount = 10;
+    let timeLimit = 10;
+    let currentQ = 0;
+    let userAnswers = [];
+    let timerInterval;
+    let timeLeft = 600;
+    let testStartTime;
+
+    // Load user docs to populate the subject selector
+    async function loadDocs() {
+      try {
+        const docs = await DocumentsAPI.list();
+        const sel = document.querySelector('select.input');
+        if (sel && docs.length > 0) {
+          sel.innerHTML = docs.map(d => `<option value="${d.id}">${d.filename}</option>`).join('');
+          activeDocumentId = docs[0].id;
+          sel.addEventListener('change', () => { activeDocumentId = parseInt(sel.value); });
+        }
+        // Load recent results
+        const results = await TestsAPI.results();
+        if (results.length > 0) {
+          const testsEl = document.getElementById('recent-tests-list');
+          if (testsEl) {
+            testsEl.innerHTML = results.slice(0, 3).map(r => `
+              <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;border:1px solid var(--border)">
+                <span style="font-size:1rem">📋</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:0.82rem;font-weight:600">Document #${r.document_id}</div>
+                  <div style="font-size:0.7rem;color:var(--text-light)">${r.total_questions} questions · ${new Date(r.taken_at).toLocaleDateString()}</div>
+                </div>
+                <span class="badge ${r.score >= 75 ? 'badge-success' : 'badge-warning'}">${r.score}%</span>
+              </div>`).join('');
+          }
+        }
+      } catch(_) {}
+    }
+
+    function setDiff(d) {
+      difficulty = d;
+      ['easy', 'medium', 'hard'].forEach(x => {
+        const el = document.getElementById(`diff-${x}`);
+        el.className = `difficulty-btn ${x}`;
+      });
+      document.getElementById(`diff-${d}`).classList.add('active');
+    }
+
+    function setQCount(n, btn) {
+      qCount = n;
+      document.querySelectorAll('[id^="q"]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function setTime(t, btn) {
+      timeLimit = t;
+      document.querySelectorAll('.difficulty-btn:not([id])').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    async function generateTest() {
+      if (!activeDocumentId) {
+        showToast('Please upload a document first to generate a test from it', 'error');
+        return;
+      }
+
+      // Show loading state
+      const genBtn = document.querySelector('[onclick="generateTest()"]');
+      const origText = genBtn.innerHTML;
+      genBtn.innerHTML = '<span class="loader"></span> Generating with AI...';
+      genBtn.disabled = true;
+
+      try {
+        const data = await TestsAPI.generate(activeDocumentId);
+        // Convert backend format to local format
+        questions = data.questions.map(q => ({
+          q: q.question,
+          opts: [q.options.A, q.options.B, q.options.C, q.options.D],
+          ans: ['A','B','C','D'].indexOf(q.correct_answer),
+          explanation: q.explanation,
+        }));
+
+        // Trim to qCount
+        questions = questions.slice(0, Math.min(qCount, questions.length));
+        qCount = questions.length;
+
+        showToast(`Generated ${qCount} questions from your document!`, 'success');
+      } catch(err) {
+        genBtn.innerHTML = origText;
+        genBtn.disabled = false;
+        showToast(err.message.includes('429') ? 'AI rate-limited. Wait 60s and try again.' : `Failed: ${err.message}`, 'error');
+        return;
+      }
+
+      genBtn.innerHTML = origText;
+      genBtn.disabled = false;
+
+      document.getElementById('config-view').style.display = 'none';
+      document.getElementById('test-view').style.display = 'block';
+      userAnswers = new Array(qCount).fill(-1);
+      currentQ = 0;
+      testStartTime = Date.now();
+      timeLeft = timeLimit * 60 || 99999;
+      startTimer();
+      renderQuestion();
+      renderDots();
+    }
+
+    function startTimer() {
+      if (!timeLimit) return;
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        const m = Math.floor(timeLeft / 60).toString().padStart(2,'0');
+        const s = (timeLeft % 60).toString().padStart(2,'0');
+        document.getElementById('timer').innerHTML = `⏱️ ${m}:${s}`;
+        if (timeLeft <= 0) { clearInterval(timerInterval); submitTest(); }
+        if (timeLeft <= 60) document.getElementById('timer').style.color = 'var(--danger)';
+      }, 1000);
+    }
+
+    function renderQuestion() {
+      const q = questions[currentQ];
+      if (!q) return;
+      const letters = ['A','B','C','D'];
+      document.getElementById('q-progress').textContent = `Question ${currentQ+1} of ${qCount}`;
+      document.getElementById('test-progress').style.width = ((currentQ+1)/qCount*100)+'%';
+      document.getElementById('prev-btn').disabled = currentQ === 0;
+      document.getElementById('next-btn').textContent = currentQ === qCount-1 ? 'Submit →' : 'Next →';
+      document.getElementById('questions-container').innerHTML = `
+        <div class="question-card">
+          <div style="margin-bottom:16px">
+            <span class="question-num">Q${currentQ+1}</span>
+            <span style="font-size:0.95rem;font-weight:700">${q.q}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            ${q.opts.map((opt,i) => `
+              <div class="mcq-option ${userAnswers[currentQ]===i?'selected':''}" onclick="selectAnswer(${i})">
+                <div class="option-letter">${letters[i]}</div><span>${opt}</span>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function selectAnswer(idx) { userAnswers[currentQ] = idx; renderQuestion(); renderDots(); }
+    function nextQ() { if (currentQ === qCount-1) { submitTest(); return; } currentQ++; renderQuestion(); }
+    function prevQ() { if (currentQ > 0) { currentQ--; renderQuestion(); } }
+
+    function renderDots() {
+      document.getElementById('q-dots').innerHTML = Array(qCount).fill('').map((_,i) => `
+        <div onclick="currentQ=${i};renderQuestion()" style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;cursor:pointer;transition:var(--transition);background:${i===currentQ?'var(--primary)':userAnswers[i]>=0?'rgba(16,185,129,0.2)':'rgba(79,70,229,0.08)'};color:${i===currentQ?'white':userAnswers[i]>=0?'var(--success)':'var(--text-muted)'}">${i+1}</div>`).join('');
+    }
+
+    async function submitTest() {
+      clearInterval(timerInterval);
+      const elapsed = Math.floor((Date.now() - testStartTime) / 1000);
+      const m = Math.floor(elapsed/60), s = elapsed%60;
+
+      // Build answers dict for API: { question_index: "A"|"B"|"C"|"D" }
+      const answersDict = {};
+      userAnswers.forEach((ans, i) => { if (ans >= 0) answersDict[i] = ['A','B','C','D'][ans]; });
+
+      const backendQuestions = questions.map(q => ({
+        question: q.q,
+        options: { A: q.opts[0], B: q.opts[1], C: q.opts[2], D: q.opts[3] },
+        correct_answer: ['A','B','C','D'][q.ans],
+        explanation: q.explanation || '',
+      }));
+
+      // Submit to backend (best effort — don't block UI on failure)
+      try {
+        await TestsAPI.submit(activeDocumentId, answersDict, backendQuestions);
+      } catch(_) {}
+
+      // Calculate score locally for instant feedback
+      let correct = 0;
+      userAnswers.forEach((ans, i) => { if (ans === questions[i].ans) correct++; });
+      const answered = userAnswers.filter(a => a >= 0).length;
+      const pct = Math.round(correct/qCount*100);
+
+      document.getElementById('test-view').style.display = 'none';
+      document.getElementById('result-view').style.display = 'block';
+      document.getElementById('score-display').textContent = pct+'%';
+      document.getElementById('score-circle').style.setProperty('--score-pct', pct+'%');
+      document.getElementById('correct-count').textContent = correct;
+      document.getElementById('wrong-count').textContent = answered - correct;
+      document.getElementById('time-taken').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+
+      const titles = {0:'Keep Practicing! 💪',60:'Good Effort! 👍',75:'Well Done! 🌟',90:'Excellent! 🏆'};
+      const key = Object.keys(titles).reverse().find(k => pct >= k);
+      document.getElementById('result-title').textContent = titles[key];
+      document.getElementById('result-sub').textContent = `You scored ${correct} out of ${qCount} questions correctly`;
+      showToast(`Test done! Score: ${pct}%`, pct >= 75 ? 'success' : 'warning');
+    }
+
+    function reviewAnswers() {
+      // Show correct answers inline
+      const container = document.getElementById('questions-container');
+      if (!container) return;
+      showToast('Scrolling to review...', 'info');
+      document.getElementById('result-view').style.display = 'none';
+      document.getElementById('test-view').style.display = 'block';
+      document.getElementById('questions-container').innerHTML = questions.map((q,qi) => {
+        const letters = ['A','B','C','D'];
+        return `<div class="question-card" style="margin-bottom:12px">
+          <div style="margin-bottom:12px"><span class="question-num">Q${qi+1}</span><span style="font-size:0.92rem;font-weight:700">${q.q}</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${q.opts.map((opt,i) => {
+              let bg = 'transparent'; let border = 'var(--border)';
+              if (i === q.ans) { bg='rgba(16,185,129,0.1)'; border='var(--success)'; }
+              else if (userAnswers[qi]===i && i!==q.ans) { bg='rgba(239,68,68,0.08)'; border='var(--danger)'; }
+              return `<div style="padding:10px 14px;border-radius:10px;border:1.5px solid ${border};background:${bg};font-size:0.85rem;display:flex;gap:10px">
+                <span style="font-weight:700;color:${i===q.ans?'var(--success)':userAnswers[qi]===i?'var(--danger)':'var(--text-muted)'}">${letters[i]}</span>
+                <span>${opt}</span>
+              </div>`;
+            }).join('')}
+          </div>
+          ${q.explanation?`<div style="margin-top:10px;padding:10px;border-radius:8px;background:rgba(79,70,229,0.06);font-size:0.8rem;color:var(--text-muted)">💡 ${q.explanation}</div>`:''}
+        </div>`;
+      }).join('');
+    }
+
+    function retakeTest() {
+      document.getElementById('result-view').style.display = 'none';
+      generateTest();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDocs);
+  </script>
+</body>
+
+</html>

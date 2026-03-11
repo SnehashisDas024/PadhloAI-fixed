@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Remote Education Tutor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .welcome-card {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #06b6d4 100%);
+      border-radius: var(--radius);
+      padding: 32px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .welcome-card::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -40px;
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .welcome-card::after {
+      content: '';
+      position: absolute;
+      bottom: -80px;
+      right: 80px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .welcome-illustration {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 4rem;
+      animation: float 3s ease-in-out infinite;
+      opacity: 0.9;
+    }
+
+    .quick-action {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 24px 16px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      border: none;
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .quick-action:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary-light);
+    }
+
+    .qa-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .qa-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .activity-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .activity-time {
+      font-size: 0.72rem;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .activity-badge {
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <script src="js/api.js"></script>
+  <script>requireAuth();</script>
+  <script src="js/layout.js"></script>
+  <script>renderLayout('Dashboard', 'dashboard.html');</script>
+
+  <main class="main-content page-content">
+
+    <!-- Welcome -->
+    <div class="welcome-card mb-6">
+      <div style="position:relative;z-index:1;max-width:60%">
+        <p style="opacity:0.8;font-size:0.85rem;margin-bottom:4px">Good Morning 🌅</p>
+        <h1 style="font-family:'Sora',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:8px">Welcome back,
+          Arjun!</h1>
+        <p style="opacity:0.8;font-size:0.88rem;line-height:1.5;margin-bottom:20px">You have 3 pending practice tests.
+          Keep up the great work!</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a href="chat.html"
+            style="background:white;color:var(--primary);padding:10px 20px;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;transition:var(--transition)"
+            onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+            Ask AI Tutor 🤖
+          </a>
+          <a href="test.html"
+            style="background:rgba(255,255,255,0.15);color:white;padding:10px 20px;border-radius:10px;font-weight:600;font-size:0.85rem;text-decoration:none;border:1.5px solid rgba(255,255,255,0.3)">
+            Take Test 📋
+          </a>
+        </div>
+      </div>
+      <div class="welcome-illustration">📚</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid-4 mb-6">
+      <div class="card stat-card">
+        <div class="stat-icon" style="background:rgba(79,70,229,0.1)">📚</div>
+        <div class="stat-value text-gradient">12</div>
+        <div class="stat-label">Books Uploaded</div>
+        <div class="progress-bar mt-2">
+          <div class="progress-fill" data-width="75%" style="width:0"></div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,0.1)">✅</div>
+        <div class="stat-value" style="color:var(--success)">847</div>
+        <div class="stat-label">Questions Solved</div>
+        <div class="progress-bar mt-2">
+          <div class="progress-fill" data-width="60%"
+            style="width:0;background:linear-gradient(90deg,var(--success),#34d399)"></div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,0.1)">🏆</div>
+        <div class="stat-value" style="color:var(--warning)">82%</div>
+        <div class="stat-label">Avg. Test Score</div>
+        <div class="progress-bar mt-2">
+          <div class="progress-fill" data-width="82%"
+            style="width:0;background:linear-gradient(90deg,var(--warning),#fbbf24)"></div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-icon" style="background:rgba(6,182,212,0.1)">⏱️</div>
+        <div class="stat-value" style="color:var(--accent)">34h</div>
+        <div class="stat-label">Study Time</div>
+        <div class="progress-bar mt-2">
+          <div class="progress-fill" data-width="55%"
+            style="width:0;background:linear-gradient(90deg,var(--accent),#22d3ee)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="margin-bottom:8px">
+      <h3 style="font-size:1rem;margin-bottom:16px">Quick Actions</h3>
+      <div class="grid-4">
+        <a href="chat.html" class="quick-action">
+          <div class="qa-icon" style="background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(139,92,246,0.1))">🤖
+          </div>
+          <span class="qa-label">Ask Tutor</span>
+        </a>
+        <a href="notes.html" class="quick-action">
+          <div class="qa-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(52,211,153,0.1))">📝
+          </div>
+          <span class="qa-label">Generate Notes</span>
+        </a>
+        <a href="test.html" class="quick-action">
+          <div class="qa-icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(251,191,36,0.1))">📋
+          </div>
+          <span class="qa-label">Take Test</span>
+        </a>
+        <a href="upload.html" class="quick-action">
+          <div class="qa-icon" style="background:linear-gradient(135deg,rgba(6,182,212,0.15),rgba(34,211,238,0.1))">📤
+          </div>
+          <span class="qa-label">Upload Book</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Two columns -->
+    <div class="grid-2 mt-6">
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h3 style="font-size:1rem">Recent Activity</h3>
+          <a href="#" class="text-sm" style="color:var(--primary);text-decoration:none">View all →</a>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="background:rgba(79,70,229,0.1)">🤖</div>
+          <div class="activity-info">
+            <div class="activity-title">Asked about Newton's Laws</div>
+            <div class="activity-time">2 minutes ago · Physics</div>
+          </div>
+          <span class="badge badge-primary activity-badge">AI Chat</span>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="background:rgba(16,185,129,0.1)">📝</div>
+          <div class="activity-info">
+            <div class="activity-title">Generated Chapter 5 Notes</div>
+            <div class="activity-time">1 hour ago · Chemistry</div>
+          </div>
+          <span class="badge badge-success activity-badge">Notes</span>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="background:rgba(245,158,11,0.1)">📋</div>
+          <div class="activity-info">
+            <div class="activity-title">Completed Math Test — 88%</div>
+            <div class="activity-time">3 hours ago · Mathematics</div>
+          </div>
+          <span class="badge badge-warning activity-badge">Test</span>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="background:rgba(6,182,212,0.1)">📤</div>
+          <div class="activity-info">
+            <div class="activity-title">Uploaded Class 10 Science PDF</div>
+            <div class="activity-time">Yesterday · Science</div>
+          </div>
+          <span class="badge badge-accent activity-badge">Upload</span>
+        </div>
+
+        <div class="activity-item">
+          <div class="activity-icon" style="background:rgba(239,68,68,0.1)">📄</div>
+          <div class="activity-info">
+            <div class="activity-title">Downloaded History Notes PDF</div>
+            <div class="activity-time">2 days ago · History</div>
+          </div>
+          <span class="badge badge-danger activity-badge">PDF</span>
+        </div>
+      </div>
+
+      <!-- Progress & Subjects -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h3 style="font-size:1rem">Subject Progress</h3>
+          <a href="analytics.html" class="text-sm" style="color:var(--primary);text-decoration:none">Details →</a>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div class="flex justify-between mb-1" style="font-size:0.82rem">
+              <span class="font-semibold">Mathematics</span>
+              <span class="text-muted">78%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" data-width="78%" style="width:0"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1" style="font-size:0.82rem">
+              <span class="font-semibold">Physics</span>
+              <span class="text-muted">85%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" data-width="85%"
+                style="width:0;background:linear-gradient(90deg,#06b6d4,#22d3ee)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1" style="font-size:0.82rem">
+              <span class="font-semibold">Chemistry</span>
+              <span class="text-muted">62%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" data-width="62%"
+                style="width:0;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1" style="font-size:0.82rem">
+              <span class="font-semibold">Biology</span>
+              <span class="text-muted">91%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" data-width="91%"
+                style="width:0;background:linear-gradient(90deg,var(--success),#34d399)"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1" style="font-size:0.82rem">
+              <span class="font-semibold">History</span>
+              <span class="text-muted">55%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" data-width="55%"
+                style="width:0;background:linear-gradient(90deg,#8b5cf6,#a78bfa)"></div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="margin-top:20px;padding:14px;border-radius:10px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.12)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span>⚠️</span>
+            <span style="font-size:0.82rem;font-weight:700;color:var(--danger)">Needs Attention</span>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-muted)">Chemistry: Organic Chemistry and History: Modern India
+            need more practice.</p>
+          <a href="chat.html"
+            style="display:inline-block;margin-top:8px;font-size:0.78rem;color:var(--primary);font-weight:600;text-decoration:none">Ask
+            AI Tutor for help →</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    // Load real stats from backend
+    async function loadDashboard() {
+      const user = Auth.getUser();
+      if (user) {
+        document.querySelectorAll('.user-welcome').forEach(el => el.textContent = user.username);
+      }
+      try {
+        const [docs, results, analytics] = await Promise.all([
+          DocumentsAPI.list(),
+          TestsAPI.results(),
+          AnalyticsAPI.summary(),
+        ]);
+
+        // Update stat cards
+        const statValues = document.querySelectorAll('.stat-value');
+        if (statValues[0]) statValues[0].textContent = docs.length;
+        if (statValues[2]) statValues[2].textContent = analytics.average_score ? analytics.average_score + '%' : '—';
+
+        // Update welcome card buttons
+        const welcomeMsg = document.querySelector('.welcome-card p');
+        if (welcomeMsg && results.length > 0) {
+          welcomeMsg.textContent = `You've taken ${results.length} tests. Avg score: ${analytics.average_score}%. Keep it up!`;
+        }
+      } catch (e) {
+        // Silently fail — show static demo data
+      }
+    }
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+  </script>
+</body>
+
+</html>
